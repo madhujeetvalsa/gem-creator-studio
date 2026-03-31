@@ -242,8 +242,8 @@ const Customize = () => {
                 key={item.uid}
                 src={item.src}
                 alt={item.name}
-                className="absolute h-20 w-20 object-contain"
-                style={{ left: item.x, top: item.y }}
+                className="absolute object-contain"
+                style={{ left: item.x, top: item.y, width: item.width, height: item.height }}
               />
             ))}
           </div>
