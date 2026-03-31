@@ -236,17 +236,7 @@ const Customize = () => {
               Here's a preview of your customized jewelry arrangement
             </DialogDescription>
           </DialogHeader>
-          <div className="relative mt-4 overflow-hidden rounded-xl bg-popover" style={{ minHeight: 400 }}>
-            {canvasItems.map((item) => (
-              <img
-                key={item.uid}
-                src={item.src}
-                alt={item.name}
-                className="absolute object-contain"
-                style={{ left: item.x, top: item.y, width: item.width, height: item.height }}
-              />
-            ))}
-          </div>
+          <PreviewCanvas canvasItems={canvasItems} canvasRef={canvasRef} />
           <div className="mt-4 flex justify-end gap-3">
             <button
               onClick={() => setPreviewOpen(false)}
