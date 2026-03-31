@@ -70,6 +70,8 @@ const Customize = () => {
           src: e.dataTransfer.getData("jewelry-src"),
           x: Math.max(0, x),
           y: Math.max(0, y),
+          width: 80,
+          height: 80,
         };
         setCanvasItems((prev) => [...prev, newItem]);
       }
