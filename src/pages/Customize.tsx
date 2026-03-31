@@ -32,6 +32,8 @@ interface CanvasItem {
   src: string;
   x: number;
   y: number;
+  width: number;
+  height: number;
 }
 
 const Customize = () => {
