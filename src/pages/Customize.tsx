@@ -265,22 +265,31 @@ const Customize = () => {
 
 const PreviewCanvas = ({
   canvasItems,
-  canvasRef,
 }: {
   canvasItems: CanvasItem[];
   canvasRef: React.RefObject<HTMLDivElement>;
 }) => {
-  // Calculate bounding box of all items to center them in preview
   if (canvasItems.length === 0) return null;
 
-  const canvasRect = canvasRef.current?.getBoundingClientRect();
-  const canvasW = canvasRect?.width || 600;
-  const canvasH = canvasRect?.height || 400;
+  // Calculate bounding box of all items
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  canvasItems.forEach((item) => {
+    minX = Math.min(minX, item.x);
+    minY = Math.min(minY, item.y);
+    maxX = Math.max(maxX, item.x + item.width);
+    maxY = Math.max(maxY, item.y + item.height);
+  });
+
+  const contentW = maxX - minX;
+  const contentH = maxY - minY;
   const previewW = 580;
   const previewH = 400;
-  const scaleX = previewW / canvasW;
-  const scaleY = previewH / canvasH;
-  const scale = Math.min(scaleX, scaleY, 1);
+  const padding = 40;
+  const availW = previewW - padding * 2;
+  const availH = previewH - padding * 2;
+  const scale = Math.min(availW / contentW, availH / contentH, 1);
+  const offsetX = (previewW - contentW * scale) / 2 - minX * scale;
+  const offsetY = (previewH - contentH * scale) / 2 - minY * scale;
 
   return (
     <div
@@ -294,8 +303,8 @@ const PreviewCanvas = ({
           alt={item.name}
           className="absolute object-contain"
           style={{
-            left: item.x * scale,
-            top: item.y * scale,
+            left: item.x * scale + offsetX,
+            top: item.y * scale + offsetY,
             width: item.width * scale,
             height: item.height * scale,
           }}
