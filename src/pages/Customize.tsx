@@ -236,7 +236,7 @@ const Customize = () => {
               Here's a preview of your customized jewelry arrangement
             </DialogDescription>
           </DialogHeader>
-          <PreviewCanvas canvasItems={canvasItems} canvasRef={canvasRef} />
+          <PreviewCanvas canvasItems={canvasItems} />
           <div className="mt-4 flex justify-end gap-3">
             <button
               onClick={() => setPreviewOpen(false)}
@@ -265,22 +265,30 @@ const Customize = () => {
 
 const PreviewCanvas = ({
   canvasItems,
-  canvasRef,
 }: {
   canvasItems: CanvasItem[];
-  canvasRef: React.RefObject<HTMLDivElement>;
 }) => {
-  // Calculate bounding box of all items to center them in preview
   if (canvasItems.length === 0) return null;
 
-  const canvasRect = canvasRef.current?.getBoundingClientRect();
-  const canvasW = canvasRect?.width || 600;
-  const canvasH = canvasRect?.height || 400;
+  // Calculate bounding box of all items
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  canvasItems.forEach((item) => {
+    minX = Math.min(minX, item.x);
+    minY = Math.min(minY, item.y);
+    maxX = Math.max(maxX, item.x + item.width);
+    maxY = Math.max(maxY, item.y + item.height);
+  });
+
+  const contentW = maxX - minX;
+  const contentH = maxY - minY;
   const previewW = 580;
   const previewH = 400;
-  const scaleX = previewW / canvasW;
-  const scaleY = previewH / canvasH;
-  const scale = Math.min(scaleX, scaleY, 1);
+  const padding = 40;
+  const availW = previewW - padding * 2;
+  const availH = previewH - padding * 2;
+  const scale = Math.min(availW / contentW, availH / contentH, 1);
+  const offsetX = (previewW - contentW * scale) / 2 - minX * scale;
+  const offsetY = (previewH - contentH * scale) / 2 - minY * scale;
 
   return (
     <div
@@ -294,8 +302,8 @@ const PreviewCanvas = ({
           alt={item.name}
           className="absolute object-contain"
           style={{
-            left: item.x * scale,
-            top: item.y * scale,
+            left: item.x * scale + offsetX,
+            top: item.y * scale + offsetY,
             width: item.width * scale,
             height: item.height * scale,
           }}
@@ -351,22 +359,21 @@ const DraggableCanvasItem = ({
 
   return (
     <motion.div
-      drag
+      drag={!resizing.current}
       dragMomentum={false}
       dragConstraints={canvasRef}
       dragElastic={0}
+      dragListener={!resizing.current}
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1, x: item.x, y: item.y }}
       transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      onDragStart={() => {
-        if (resizing.current) return;
-      }}
       onDragEnd={(_, info) => {
+        if (resizing.current) return;
         onPositionChange(item.uid, item.x + info.offset.x, item.y + info.offset.y);
       }}
       onClick={() => setIsSelected(!isSelected)}
       className="group absolute cursor-grab active:cursor-grabbing"
-      style={{ left: 0, top: 0 }}
+      style={{ left: 0, top: 0, touchAction: "none" }}
     >
       <div
         className="relative"
@@ -396,6 +403,7 @@ const DraggableCanvasItem = ({
         <div
           onPointerDown={handleResizeStart}
           className="absolute -bottom-1.5 -right-1.5 h-4 w-4 cursor-nwse-resize rounded-sm bg-primary opacity-0 shadow-md transition-opacity group-hover:opacity-80"
+          style={{ touchAction: "none" }}
         />
       </div>
     </motion.div>
