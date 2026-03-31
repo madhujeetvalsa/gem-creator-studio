@@ -305,6 +305,7 @@ const PreviewCanvas = ({
   );
 };
 
+interface DraggableCanvasItemProps {
   item: CanvasItem;
   canvasRef: React.RefObject<HTMLDivElement>;
   onPositionChange: (uid: string, x: number, y: number) => void;
