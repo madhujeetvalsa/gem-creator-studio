@@ -263,7 +263,48 @@ const Customize = () => {
   );
 };
 
-interface DraggableCanvasItemProps {
+const PreviewCanvas = ({
+  canvasItems,
+  canvasRef,
+}: {
+  canvasItems: CanvasItem[];
+  canvasRef: React.RefObject<HTMLDivElement>;
+}) => {
+  // Calculate bounding box of all items to center them in preview
+  if (canvasItems.length === 0) return null;
+
+  const canvasRect = canvasRef.current?.getBoundingClientRect();
+  const canvasW = canvasRect?.width || 600;
+  const canvasH = canvasRect?.height || 400;
+  const previewW = 580;
+  const previewH = 400;
+  const scaleX = previewW / canvasW;
+  const scaleY = previewH / canvasH;
+  const scale = Math.min(scaleX, scaleY, 1);
+
+  return (
+    <div
+      className="relative mx-auto mt-4 overflow-hidden rounded-xl bg-popover"
+      style={{ width: previewW, height: previewH }}
+    >
+      {canvasItems.map((item) => (
+        <img
+          key={item.uid}
+          src={item.src}
+          alt={item.name}
+          className="absolute object-contain"
+          style={{
+            left: item.x * scale,
+            top: item.y * scale,
+            width: item.width * scale,
+            height: item.height * scale,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
   item: CanvasItem;
   canvasRef: React.RefObject<HTMLDivElement>;
   onPositionChange: (uid: string, x: number, y: number) => void;
