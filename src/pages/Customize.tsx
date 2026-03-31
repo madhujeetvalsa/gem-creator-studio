@@ -89,6 +89,12 @@ const Customize = () => {
     );
   }, []);
 
+  const updateItemSize = useCallback((uid: string, width: number, height: number) => {
+    setCanvasItems((prev) =>
+      prev.map((item) => (item.uid === uid ? { ...item, width, height } : item))
+    );
+  }, []);
+
   const removeItem = useCallback((uid: string) => {
     setCanvasItems((prev) => prev.filter((item) => item.uid !== uid));
   }, []);
