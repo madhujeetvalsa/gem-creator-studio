@@ -217,6 +217,7 @@ const Customize = () => {
                 item={item}
                 canvasRef={canvasRef}
                 onPositionChange={updateItemPosition}
+                onSizeChange={updateItemSize}
                 onRemove={removeItem}
               />
             ))}
