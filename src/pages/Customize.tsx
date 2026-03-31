@@ -277,6 +277,7 @@ interface DraggableCanvasItemProps {
   item: CanvasItem;
   canvasRef: React.RefObject<HTMLDivElement>;
   onPositionChange: (uid: string, x: number, y: number) => void;
+  onSizeChange: (uid: string, width: number, height: number) => void;
   onRemove: (uid: string) => void;
 }
 
@@ -284,8 +285,38 @@ const DraggableCanvasItem = ({
   item,
   canvasRef,
   onPositionChange,
+  onSizeChange,
   onRemove,
 }: DraggableCanvasItemProps) => {
+  const [isSelected, setIsSelected] = useState(false);
+  const resizing = useRef(false);
+
+  const handleResizeStart = useCallback(
+    (e: React.PointerEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      resizing.current = true;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startW = item.width;
+      const startH = item.height;
+
+      const onMove = (ev: PointerEvent) => {
+        const dw = ev.clientX - startX;
+        const dh = ev.clientY - startY;
+        onSizeChange(item.uid, Math.max(30, startW + dw), Math.max(30, startH + dh));
+      };
+      const onUp = () => {
+        resizing.current = false;
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+    },
+    [item.uid, item.width, item.height, onSizeChange]
+  );
+
   return (
     <motion.div
       drag
@@ -295,30 +326,45 @@ const DraggableCanvasItem = ({
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1, x: item.x, y: item.y }}
       transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      onDragEnd={(_, info) => {
-        onPositionChange(
-          item.uid,
-          item.x + info.offset.x,
-          item.y + info.offset.y
-        );
+      onDragStart={() => {
+        if (resizing.current) return;
       }}
+      onDragEnd={(_, info) => {
+        onPositionChange(item.uid, item.x + info.offset.x, item.y + info.offset.y);
+      }}
+      onClick={() => setIsSelected(!isSelected)}
       className="group absolute cursor-grab active:cursor-grabbing"
       style={{ left: 0, top: 0 }}
     >
-      <div className="relative">
+      <div
+        className="relative"
+        style={{ width: item.width, height: item.height }}
+      >
+        {/* Border while on canvas */}
+        <div className="absolute inset-0 rounded-md border border-pink-glow/40 pointer-events-none" />
         <img
           src={item.src}
           alt={item.name}
-          className="h-20 w-20 object-contain drop-shadow-lg"
+          className="h-full w-full object-contain drop-shadow-lg"
+          draggable={false}
         />
+        {/* Remove button */}
         <button
-          onClick={() => onRemove(item.uid)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove(item.uid);
+          }}
           className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-0 shadow-md transition-opacity group-hover:opacity-100"
         >
           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
+        {/* Resize handle */}
+        <div
+          onPointerDown={handleResizeStart}
+          className="absolute -bottom-1.5 -right-1.5 h-4 w-4 cursor-nwse-resize rounded-sm bg-primary opacity-0 shadow-md transition-opacity group-hover:opacity-80"
+        />
       </div>
     </motion.div>
   );
