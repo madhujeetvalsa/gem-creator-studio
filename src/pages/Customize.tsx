@@ -236,17 +236,7 @@ const Customize = () => {
               Here's a preview of your customized jewelry arrangement
             </DialogDescription>
           </DialogHeader>
-          <div className="relative mt-4 overflow-hidden rounded-xl bg-popover" style={{ minHeight: 400 }}>
-            {canvasItems.map((item) => (
-              <img
-                key={item.uid}
-                src={item.src}
-                alt={item.name}
-                className="absolute object-contain"
-                style={{ left: item.x, top: item.y, width: item.width, height: item.height }}
-              />
-            ))}
-          </div>
+          <PreviewCanvas canvasItems={canvasItems} canvasRef={canvasRef} />
           <div className="mt-4 flex justify-end gap-3">
             <button
               onClick={() => setPreviewOpen(false)}
@@ -269,6 +259,48 @@ const Customize = () => {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+};
+
+const PreviewCanvas = ({
+  canvasItems,
+  canvasRef,
+}: {
+  canvasItems: CanvasItem[];
+  canvasRef: React.RefObject<HTMLDivElement>;
+}) => {
+  // Calculate bounding box of all items to center them in preview
+  if (canvasItems.length === 0) return null;
+
+  const canvasRect = canvasRef.current?.getBoundingClientRect();
+  const canvasW = canvasRect?.width || 600;
+  const canvasH = canvasRect?.height || 400;
+  const previewW = 580;
+  const previewH = 400;
+  const scaleX = previewW / canvasW;
+  const scaleY = previewH / canvasH;
+  const scale = Math.min(scaleX, scaleY, 1);
+
+  return (
+    <div
+      className="relative mx-auto mt-4 overflow-hidden rounded-xl bg-popover"
+      style={{ width: previewW, height: previewH }}
+    >
+      {canvasItems.map((item) => (
+        <img
+          key={item.uid}
+          src={item.src}
+          alt={item.name}
+          className="absolute object-contain"
+          style={{
+            left: item.x * scale,
+            top: item.y * scale,
+            width: item.width * scale,
+            height: item.height * scale,
+          }}
+        />
+      ))}
     </div>
   );
 };
