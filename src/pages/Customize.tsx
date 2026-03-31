@@ -360,22 +360,21 @@ const DraggableCanvasItem = ({
 
   return (
     <motion.div
-      drag
+      drag={!resizing.current}
       dragMomentum={false}
       dragConstraints={canvasRef}
       dragElastic={0}
+      dragListener={!resizing.current}
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1, x: item.x, y: item.y }}
       transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      onDragStart={() => {
-        if (resizing.current) return;
-      }}
       onDragEnd={(_, info) => {
+        if (resizing.current) return;
         onPositionChange(item.uid, item.x + info.offset.x, item.y + info.offset.y);
       }}
       onClick={() => setIsSelected(!isSelected)}
       className="group absolute cursor-grab active:cursor-grabbing"
-      style={{ left: 0, top: 0 }}
+      style={{ left: 0, top: 0, touchAction: "none" }}
     >
       <div
         className="relative"
@@ -405,6 +404,7 @@ const DraggableCanvasItem = ({
         <div
           onPointerDown={handleResizeStart}
           className="absolute -bottom-1.5 -right-1.5 h-4 w-4 cursor-nwse-resize rounded-sm bg-primary opacity-0 shadow-md transition-opacity group-hover:opacity-80"
+          style={{ touchAction: "none" }}
         />
       </div>
     </motion.div>
