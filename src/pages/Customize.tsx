@@ -236,7 +236,7 @@ const Customize = () => {
               Here's a preview of your customized jewelry arrangement
             </DialogDescription>
           </DialogHeader>
-          <PreviewCanvas canvasItems={canvasItems} canvasRef={canvasRef} />
+          <PreviewCanvas canvasItems={canvasItems} />
           <div className="mt-4 flex justify-end gap-3">
             <button
               onClick={() => setPreviewOpen(false)}
