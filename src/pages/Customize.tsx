@@ -267,7 +267,6 @@ const PreviewCanvas = ({
   canvasItems,
 }: {
   canvasItems: CanvasItem[];
-  canvasRef: React.RefObject<HTMLDivElement>;
 }) => {
   if (canvasItems.length === 0) return null;
 
