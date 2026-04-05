@@ -9,21 +9,20 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-import ringGold from "@/assets/jewelry/ring-gold.png";
-import necklaceSilver from "@/assets/jewelry/necklace-silver.png";
-import earringsDiamond from "@/assets/jewelry/earrings-diamond.png";
-import braceletGold from "@/assets/jewelry/bracelet-gold.png";
-import tiaraRosegold from "@/assets/jewelry/tiara-rosegold.png";
-import broochPearl from "@/assets/jewelry/brooch-pearl.png";
+// Dynamically import all images from the jewelry folder.
+// Any new image added to src/assets/jewelry/ will appear automatically.
+const jewelryModules = import.meta.glob<{ default: string }>(
+  "../assets/jewelry/*.{png,jpg,jpeg,webp,svg}",
+  { eager: true }
+);
 
-const JEWELRY_ITEMS = [
-  { id: "ring", name: "Gold Ring", src: ringGold },
-  { id: "necklace", name: "Silver Necklace", src: necklaceSilver },
-  { id: "earrings", name: "Diamond Earrings", src: earringsDiamond },
-  { id: "bracelet", name: "Gold Bracelet", src: braceletGold },
-  { id: "tiara", name: "Rose Gold Tiara", src: tiaraRosegold },
-  { id: "brooch", name: "Pearl Brooch", src: broochPearl },
-];
+const JEWELRY_ITEMS = Object.entries(jewelryModules).map(([path, mod]) => {
+  const filename = path.split("/").pop()!.replace(/\.[^.]+$/, ""); // e.g. "charm-1"
+  const name = filename
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase()); // e.g. "Charm 1"
+  return { id: filename, name, src: mod.default };
+});
 
 interface CanvasItem {
   uid: string;
@@ -34,6 +33,7 @@ interface CanvasItem {
   y: number;
   width: number;
   height: number;
+  rotation: number;
 }
 
 const Customize = () => {
@@ -72,6 +72,7 @@ const Customize = () => {
           y: Math.max(0, y),
           width: 80,
           height: 80,
+          rotation: 0,
         };
         setCanvasItems((prev) => [...prev, newItem]);
       }
@@ -95,12 +96,18 @@ const Customize = () => {
     );
   }, []);
 
+  const updateItemRotation = useCallback((uid: string, rotation: number) => {
+    setCanvasItems((prev) =>
+      prev.map((item) => (item.uid === uid ? { ...item, rotation } : item))
+    );
+  }, []);
+
   const removeItem = useCallback((uid: string) => {
     setCanvasItems((prev) => prev.filter((item) => item.uid !== uid));
   }, []);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex h-screen flex-col bg-background overflow-hidden">
       {/* Header */}
       <header className="flex items-center justify-between border-b border-border px-6 py-4">
         <button
@@ -159,7 +166,7 @@ const Customize = () => {
         </aside>
 
         {/* Right Panel - Canvas */}
-        <main className="flex flex-1 flex-col p-6">
+        <main className="flex flex-1 flex-col p-6 overflow-hidden">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="font-display text-lg font-semibold text-foreground">
@@ -218,6 +225,7 @@ const Customize = () => {
                 canvasRef={canvasRef}
                 onPositionChange={updateItemPosition}
                 onSizeChange={updateItemSize}
+                onRotationChange={updateItemRotation}
                 onRemove={removeItem}
               />
             ))}
@@ -306,6 +314,8 @@ const PreviewCanvas = ({
             top: item.y * scale + offsetY,
             width: item.width * scale,
             height: item.height * scale,
+            transform: `rotate(${item.rotation}deg)`,
+            transformOrigin: "center center",
           }}
         />
       ))}
@@ -318,6 +328,7 @@ interface DraggableCanvasItemProps {
   canvasRef: React.RefObject<HTMLDivElement>;
   onPositionChange: (uid: string, x: number, y: number) => void;
   onSizeChange: (uid: string, width: number, height: number) => void;
+  onRotationChange: (uid: string, rotation: number) => void;
   onRemove: (uid: string) => void;
 }
 
@@ -326,28 +337,52 @@ const DraggableCanvasItem = ({
   canvasRef,
   onPositionChange,
   onSizeChange,
+  onRotationChange,
   onRemove,
 }: DraggableCanvasItemProps) => {
-  const [isSelected, setIsSelected] = useState(false);
-  const resizing = useRef(false);
+  const [isResizing, setIsResizing] = useState(false);
+
+  // Free-hand drag via pointer events — no constraints
+  const handleDragStart = useCallback(
+    (e: React.PointerEvent) => {
+      if (isResizing) return;
+      e.preventDefault();
+      e.currentTarget.setPointerCapture(e.pointerId);
+      const startX = e.clientX - item.x;
+      const startY = e.clientY - item.y;
+
+      const onMove = (ev: PointerEvent) => {
+        onPositionChange(item.uid, ev.clientX - startX, ev.clientY - startY);
+      };
+      const onUp = () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+    },
+    [isResizing, item.uid, item.x, item.y, onPositionChange]
+  );
 
   const handleResizeStart = useCallback(
     (e: React.PointerEvent) => {
       e.stopPropagation();
       e.preventDefault();
-      resizing.current = true;
+      setIsResizing(true);
       const startX = e.clientX;
       const startY = e.clientY;
       const startW = item.width;
       const startH = item.height;
 
       const onMove = (ev: PointerEvent) => {
-        const dw = ev.clientX - startX;
-        const dh = ev.clientY - startY;
-        onSizeChange(item.uid, Math.max(30, startW + dw), Math.max(30, startH + dh));
+        onSizeChange(
+          item.uid,
+          Math.max(30, startW + ev.clientX - startX),
+          Math.max(30, startH + ev.clientY - startY)
+        );
       };
       const onUp = () => {
-        resizing.current = false;
+        setIsResizing(false);
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
       };
@@ -357,29 +392,43 @@ const DraggableCanvasItem = ({
     [item.uid, item.width, item.height, onSizeChange]
   );
 
+  // Rotate handle: drag around item center to spin
+  const handleRotateStart = useCallback(
+    (e: React.PointerEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const cx = item.x + item.width / 2;
+      const cy = item.y + item.height / 2;
+
+      const onMove = (ev: PointerEvent) => {
+        const angle = Math.atan2(ev.clientY - cy, ev.clientX - cx) * (180 / Math.PI) + 90;
+        onRotationChange(item.uid, angle);
+      };
+      const onUp = () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+    },
+    [item.uid, item.x, item.y, item.width, item.height, onRotationChange]
+  );
+
   return (
-    <motion.div
-      drag={!resizing.current}
-      dragMomentum={false}
-      dragConstraints={canvasRef}
-      dragElastic={0}
-      dragListener={!resizing.current}
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1, x: item.x, y: item.y }}
-      transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      onDragEnd={(_, info) => {
-        if (resizing.current) return;
-        onPositionChange(item.uid, item.x + info.offset.x, item.y + info.offset.y);
+    <div
+      onPointerDown={handleDragStart}
+      className={`group absolute ${isResizing ? "cursor-nwse-resize" : "cursor-grab active:cursor-grabbing"}`}
+      style={{
+        left: item.x,
+        top: item.y,
+        width: item.width,
+        height: item.height,
+        transform: `rotate(${item.rotation}deg)`,
+        transformOrigin: "center center",
+        touchAction: "none",
       }}
-      onClick={() => setIsSelected(!isSelected)}
-      className="group absolute cursor-grab active:cursor-grabbing"
-      style={{ left: 0, top: 0, touchAction: "none" }}
     >
-      <div
-        className="relative"
-        style={{ width: item.width, height: item.height }}
-      >
-        {/* Border while on canvas */}
+      <div className="relative w-full h-full">
         <div className="absolute inset-0 rounded-md border border-pink-glow/40 pointer-events-none" />
         <img
           src={item.src}
@@ -389,24 +438,33 @@ const DraggableCanvasItem = ({
         />
         {/* Remove button */}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove(item.uid);
-          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); onRemove(item.uid); }}
           className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-0 shadow-md transition-opacity group-hover:opacity-100"
         >
           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        {/* Resize handle */}
+        {/* Rotate handle — top center */}
+        <div
+          onPointerDown={handleRotateStart}
+          title="Rotate"
+          className="absolute -top-6 left-1/2 -translate-x-1/2 flex h-5 w-5 cursor-crosshair items-center justify-center rounded-full bg-primary opacity-0 shadow-md transition-opacity group-hover:opacity-80"
+          style={{ touchAction: "none" }}
+        >
+          <svg className="h-3 w-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </div>
+        {/* Resize handle — bottom right */}
         <div
           onPointerDown={handleResizeStart}
           className="absolute -bottom-1.5 -right-1.5 h-4 w-4 cursor-nwse-resize rounded-sm bg-primary opacity-0 shadow-md transition-opacity group-hover:opacity-80"
           style={{ touchAction: "none" }}
         />
       </div>
-    </motion.div>
+    </div>
   );
 };
 
