@@ -20,7 +20,7 @@ export function useItemInteraction({
 
     const handleDragStart = useCallback(
         (e: React.PointerEvent) => {
-            if (isResizing) return;
+            if (isResizing || item.locked) return;
             e.stopPropagation();
             e.preventDefault();
             onSelect();
@@ -41,6 +41,7 @@ export function useItemInteraction({
 
     const handleResizeStart = useCallback(
         (e: React.PointerEvent) => {
+            if (item.locked) return;
             e.stopPropagation();
             e.preventDefault();
             setIsResizing(true);
@@ -68,6 +69,7 @@ export function useItemInteraction({
 
     const handleRotateStart = useCallback(
         (e: React.PointerEvent) => {
+            if (item.locked) return;
             e.stopPropagation();
             e.preventDefault();
             (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);

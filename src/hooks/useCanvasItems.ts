@@ -14,6 +14,7 @@ function makeItem(
         width: 80,
         height: 80,
         rotation: 0,
+        locked: false,
     };
 }
 
@@ -79,6 +80,12 @@ export function useCanvasItems() {
         setSelectedUid(null);
     }, []);
 
+    const toggleLock = useCallback((uid: string) => {
+        setItems((prev) =>
+            prev.map((it) => (it.uid === uid ? { ...it, locked: !it.locked } : it))
+        );
+    }, []);
+
     return {
         items,
         selectedUid,
@@ -91,5 +98,6 @@ export function useCanvasItems() {
         updateRotation,
         removeItem,
         clearAll,
+        toggleLock,
     };
 }

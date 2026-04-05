@@ -14,6 +14,7 @@ interface DesignCanvasProps {
   onSizeChange: (uid: string, width: number, height: number) => void;
   onRotationChange: (uid: string, rotation: number) => void;
   onRemove: (uid: string) => void;
+  onToggleLock: (uid: string) => void;
 }
 
 export function DesignCanvas({
@@ -28,6 +29,7 @@ export function DesignCanvas({
   onSizeChange,
   onRotationChange,
   onRemove,
+  onToggleLock,
 }: DesignCanvasProps) {
   return (
     <div
@@ -57,6 +59,7 @@ export function DesignCanvas({
           onSizeChange={onSizeChange}
           onRotationChange={onRotationChange}
           onRemove={onRemove}
+          onToggleLock={onToggleLock}
         />
       ))}
     </div>

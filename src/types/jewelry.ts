@@ -11,4 +11,5 @@ export interface CanvasItem extends JewelryItem {
     width: number;
     height: number;
     rotation: number;
+    locked: boolean;
 }

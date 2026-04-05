@@ -24,6 +24,7 @@ const Customize = () => {
     updateRotation,
     removeItem,
     clearAll,
+    toggleLock,
   } = useCanvasItems();
 
   const handleDragFromGallery = useCallback(
@@ -94,6 +95,7 @@ const Customize = () => {
             onSizeChange={updateSize}
             onRotationChange={updateRotation}
             onRemove={removeItem}
+            onToggleLock={toggleLock}
           />
 
           {/* Mobile bottom bar */}
